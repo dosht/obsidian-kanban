@@ -35,6 +35,7 @@ export class KanbanView extends TextFileView implements HoverParent {
   actionButtons: Record<string, HTMLElement> = {};
 
   previewCache: Map<string, BasicMarkdownRenderer>;
+  expandedItems: Set<string> = new Set();
   previewQueue: PromiseQueue;
 
   activeEditor: any;

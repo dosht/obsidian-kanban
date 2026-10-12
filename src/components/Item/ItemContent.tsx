@@ -8,6 +8,7 @@ import {
   useEffect,
   useMemo,
   useRef,
+  useState,
 } from 'preact/hooks';
 import { StateManager } from 'src/StateManager';
 import { useNestedEntityPath } from 'src/dnd/components/Droppable';
@@ -15,6 +16,7 @@ import { Path } from 'src/dnd/types';
 import { getTaskStatusDone, toggleTaskString } from 'src/parsers/helpers/inlineMetadata';
 
 import { MarkdownEditor, allowNewLine } from '../Editor/MarkdownEditor';
+import { Icon } from '../Icon/Icon';
 import {
   MarkdownClonedPreviewRenderer,
   MarkdownRenderer,
@@ -188,9 +190,25 @@ export const ItemContent = memo(function ItemContent({
   showMetadata = true,
   isStatic,
 }: ItemContentProps) {
-  const { stateManager, filePath, boardModifiers } = useContext(KanbanContext);
+  const { view, stateManager, filePath, boardModifiers } = useContext(KanbanContext);
   const getDateColor = useGetDateColorFn(stateManager);
   const titleRef = useRef<string | null>(null);
+
+  const [titleHead, ...titleDetails] = item.data.title.split('\n');
+  const hasDetails = titleDetails.some((line) => line.trim());
+  const [isExpanded, setIsExpanded] = useState(() => view.expandedItems.has(item.id));
+  const showDetails = isExpanded || !!searchQuery;
+  const markdownString = hasDetails && !showDetails ? titleHead : item.data.title;
+
+  const toggleDetails = useCallback(
+    (e: MouseEvent) => {
+      e.stopPropagation();
+      if (isExpanded) view.expandedItems.delete(item.id);
+      else view.expandedItems.add(item.id);
+      setIsExpanded(!isExpanded);
+    },
+    [view, item.id, isExpanded]
+  );
 
   useEffect(() => {
     if (editState === EditingState.complete) {
@@ -280,7 +298,7 @@ export const ItemContent = memo(function ItemContent({
         <MarkdownClonedPreviewRenderer
           entityId={item.id}
           className={c('item-markdown')}
-          markdownString={item.data.title}
+          markdownString={markdownString}
           searchQuery={searchQuery}
           onPointerUp={onCheckboxContainerClick}
         />
@@ -288,10 +306,22 @@ export const ItemContent = memo(function ItemContent({
         <MarkdownRenderer
           entityId={item.id}
           className={c('item-markdown')}
-          markdownString={item.data.title}
+          markdownString={markdownString}
           searchQuery={searchQuery}
           onPointerUp={onCheckboxContainerClick}
         />
+      )}
+      {hasDetails && !searchQuery && (
+        <a
+          data-ignore-drag={true}
+          onPointerDown={(e) => e.preventDefault()}
+          onClick={toggleDetails}
+          onDblClick={(e) => e.stopPropagation()}
+          className={`${c('item-details-toggle')} clickable-icon`}
+          aria-label={showDetails ? 'Hide details' : 'Show details'}
+        >
+          <Icon name={showDetails ? 'lucide-chevron-down' : 'lucide-chevron-right'} />
+        </a>
       )}
       {showMetadata && (
         <div className={c('item-metadata')}>

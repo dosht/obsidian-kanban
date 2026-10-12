@@ -16,6 +16,7 @@ interface LaneFormProps {
 
 export function LaneForm({ onNewLane, closeLaneForm }: LaneFormProps) {
   const [shouldMarkAsComplete, setShouldMarkAsComplete] = useState(false);
+  const [shouldMarkAsInProgress, setShouldMarkAsInProgress] = useState(false);
   const editorRef = useRef<EditorView>();
   const inputRef = useRef<HTMLTextAreaElement>();
   const clickOutsideRef = useOnclickOutside(() => closeLaneForm(), {
@@ -37,6 +38,7 @@ export function LaneForm({ onNewLane, closeLaneForm }: LaneFormProps) {
         data: {
           ...parseLaneTitle(title),
           shouldMarkItemsComplete: shouldMarkAsComplete,
+          shouldMarkItemsInProgress: shouldMarkAsInProgress,
         },
       });
 
@@ -49,9 +51,10 @@ export function LaneForm({ onNewLane, closeLaneForm }: LaneFormProps) {
       });
 
       setShouldMarkAsComplete(false);
+      setShouldMarkAsInProgress(false);
       onNewLane();
     },
-    [onNewLane, setShouldMarkAsComplete, boardModifiers]
+    [onNewLane, shouldMarkAsComplete, shouldMarkAsInProgress, boardModifiers]
   );
 
   const editState = useMemo(() => ({ x: 0, y: 0 }), []);
@@ -84,8 +87,21 @@ export function LaneForm({ onNewLane, closeLaneForm }: LaneFormProps) {
       <div className={c('checkbox-wrapper')}>
         <div className={c('checkbox-label')}>{t('Mark cards in this list as complete')}</div>
         <div
-          onClick={() => setShouldMarkAsComplete(!shouldMarkAsComplete)}
+          onClick={() => {
+            setShouldMarkAsComplete(!shouldMarkAsComplete);
+            setShouldMarkAsInProgress(false);
+          }}
           className={`checkbox-container ${shouldMarkAsComplete ? 'is-enabled' : ''}`}
+        />
+      </div>
+      <div className={c('checkbox-wrapper')}>
+        <div className={c('checkbox-label')}>{t('Mark cards in this list as in progress')}</div>
+        <div
+          onClick={() => {
+            setShouldMarkAsInProgress(!shouldMarkAsInProgress);
+            setShouldMarkAsComplete(false);
+          }}
+          className={`checkbox-container ${shouldMarkAsInProgress ? 'is-enabled' : ''}`}
         />
       </div>
       <div className={c('lane-input-actions')}>

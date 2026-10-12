@@ -13,7 +13,7 @@ import {
 } from 'src/parsers/helpers/inlineMetadata';
 
 import { SearchContextProps } from './context';
-import { Board, DataKey, DateColor, Item, Lane, PageData, TagColor } from './types';
+import { Board, DataKey, DateColor, Item, Lane, LaneData, PageData, TagColor } from './types';
 
 export const baseClassName = 'kanban-plugin';
 
@@ -33,6 +33,14 @@ export function generateInstanceId(len: number = 9): string {
     .slice(2, 2 + len);
 }
 
+export const inProgressCheckChar = '-';
+
+export function getLaneCheckChar(lane?: LaneData) {
+  if (lane?.shouldMarkItemsComplete) return getTaskStatusDone();
+  if (lane?.shouldMarkItemsInProgress) return inProgressCheckChar;
+  return ' ';
+}
+
 export function maybeCompleteForMove(
   sourceStateManager: StateManager,
   sourceBoard: Board,
@@ -47,6 +55,19 @@ export function maybeCompleteForMove(
 
   const oldShouldComplete = sourceParent?.data?.shouldMarkItemsComplete;
   const newShouldComplete = destinationParent?.data?.shouldMarkItemsComplete;
+  const oldInProgress = sourceParent?.data?.shouldMarkItemsInProgress;
+  const newInProgress = destinationParent?.data?.shouldMarkItemsInProgress;
+
+  if (newInProgress || (oldInProgress && !newShouldComplete)) {
+    const checkChar = newInProgress ? inProgressCheckChar : ' ';
+    if (item.data.checkChar === checkChar) return { next: item };
+
+    return {
+      next: update(item, {
+        data: { checked: { $set: checkChar !== ' ' }, checkChar: { $set: checkChar } },
+      }),
+    };
+  }
 
   // If neither the old or new lane set it complete, leave it alone
   if (!oldShouldComplete && !newShouldComplete) return { next: item };

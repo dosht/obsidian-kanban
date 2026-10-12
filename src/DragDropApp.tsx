@@ -6,7 +6,7 @@ import { KanbanView } from './KanbanView';
 import { DraggableItem } from './components/Item/Item';
 import { DraggableLane } from './components/Lane/Lane';
 import { KanbanContext } from './components/context';
-import { c, maybeCompleteForMove } from './components/helpers';
+import { c, getLaneCheckChar, maybeCompleteForMove } from './components/helpers';
 import { Board, DataTypes, Item, Lane } from './components/types';
 import { DndContext } from './dnd/components/DndContext';
 import { DragOverlay } from './dnd/components/DragOverlay';
@@ -21,11 +21,7 @@ import {
 import { getBoardModifiers } from './helpers/boardModifiers';
 import KanbanPlugin from './main';
 import { frontmatterKey } from './parsers/common';
-import {
-  getTaskStatusDone,
-  getTaskStatusPreDone,
-  toggleTask,
-} from './parsers/helpers/inlineMetadata';
+import { getTaskStatusPreDone, toggleTask } from './parsers/helpers/inlineMetadata';
 
 export function createApp(win: Window, plugin: KanbanPlugin) {
   return <DragDropApp win={win} plugin={plugin} />;
@@ -70,12 +66,10 @@ export function DragDropApp({ win, plugin }: { win: Window; plugin: KanbanPlugin
             return update(item, {
               data: {
                 checked: {
-                  $set: !!destinationParent?.data?.shouldMarkItemsComplete,
+                  $set: getLaneCheckChar(destinationParent?.data) !== ' ',
                 },
                 checkChar: {
-                  $set: destinationParent?.data?.shouldMarkItemsComplete
-                    ? getTaskStatusDone()
-                    : ' ',
+                  $set: getLaneCheckChar(destinationParent?.data),
                 },
               },
             });

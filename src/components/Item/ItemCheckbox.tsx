@@ -6,7 +6,7 @@ import { getTaskStatusDone, toggleTask } from 'src/parsers/helpers/inlineMetadat
 
 import { BoardModifiers } from '../../helpers/boardModifiers';
 import { Icon } from '../Icon/Icon';
-import { c } from '../helpers';
+import { c, inProgressCheckChar } from '../helpers';
 import { Item } from '../types';
 
 interface ItemCheckboxProps {
@@ -104,7 +104,7 @@ export const ItemCheckbox = memo(function ItemCheckbox({
           onChange={onCheckboxChange}
           type="checkbox"
           className="task-list-item-checkbox"
-          checked={item.data.checked}
+          checked={item.data.checked && item.data.checkChar !== inProgressCheckChar}
           data-task={item.data.checkChar}
         />
       )}

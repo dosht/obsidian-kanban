@@ -20,8 +20,9 @@ import { defaultSort } from 'src/helpers/util';
 import { t } from 'src/lang/helpers';
 import { visit } from 'unist-util-visit';
 
-import { archiveString, completeString, settingsToCodeblock } from '../common';
+import { archiveString, completeString, inProgressString, settingsToCodeblock } from '../common';
 import { DateNode, FileNode, TimeNode, ValueNode } from '../extensions/types';
+import { RegionFormat } from '../region';
 import {
   ContentBoundary,
   getNextOfType,
@@ -253,6 +254,7 @@ export function astToUnhydratedBoard(
       const title = getStringFromBoundary(md, headingBoundary);
 
       let shouldMarkItemsComplete = false;
+      let shouldMarkItemsInProgress = false;
 
       const list = getNextOfType(root.children, index, 'list', (child) => {
         if (child.type === 'heading') return false;
@@ -266,6 +268,11 @@ export function astToUnhydratedBoard(
 
           if (childStr === t('Complete')) {
             shouldMarkItemsComplete = true;
+            return true;
+          }
+
+          if (childStr === t('In progress')) {
+            shouldMarkItemsInProgress = true;
             return true;
           }
         }
@@ -295,6 +302,7 @@ export function astToUnhydratedBoard(
           data: {
             ...parseLaneTitle(title),
             shouldMarkItemsComplete,
+            shouldMarkItemsInProgress: shouldMarkItemsInProgress && !shouldMarkItemsComplete,
           },
         });
       } else {
@@ -312,6 +320,7 @@ export function astToUnhydratedBoard(
           data: {
             ...parseLaneTitle(title),
             shouldMarkItemsComplete,
+            shouldMarkItemsInProgress: shouldMarkItemsInProgress && !shouldMarkItemsComplete,
           },
         });
       }
@@ -400,23 +409,29 @@ export function reparseBoard(stateManager: StateManager, board: Board) {
   }
 }
 
-function itemToMd(item: Item) {
-  return `- [${item.data.checkChar}] ${addBlockId(indentNewLines(item.data.titleRaw), item)}`;
+function itemToMd(item: Item, indent?: string) {
+  return `- [${item.data.checkChar}] ${addBlockId(indentNewLines(item.data.titleRaw, indent), item)}`;
 }
 
-function laneToMd(lane: Lane) {
+function laneToMd(lane: Lane, format?: RegionFormat) {
+  const headingDepth = format?.headingDepth ?? 2;
   const lines: string[] = [];
 
-  lines.push(`## ${replaceNewLines(laneTitleWithMaxItems(lane.data.title, lane.data.maxItems))}`);
+  lines.push(
+    `${'#'.repeat(headingDepth)} ${replaceNewLines(laneTitleWithMaxItems(lane.data.title, lane.data.maxItems))}`
+  );
 
   lines.push('');
 
   if (lane.data.shouldMarkItemsComplete) {
     lines.push(completeString);
+  } else if (lane.data.shouldMarkItemsInProgress) {
+    lines.push(inProgressString);
   }
 
-  lane.children.forEach((item) => {
-    lines.push(itemToMd(item));
+  lane.children.forEach((item, i) => {
+    if (i > 0 && format?.looseItems) lines.push('');
+    lines.push(itemToMd(item, format?.itemIndent ?? undefined));
   });
 
   lines.push('');
@@ -448,4 +463,18 @@ export function boardToMd(board: Board) {
   const frontmatter = ['---', '', stringifyYaml(board.data.frontmatter), '---', '', ''].join('\n');
 
   return frontmatter + lanes + archiveToMd(board.data.archive) + settingsToCodeblock(board);
+}
+
+export function boardToRegionMd(board: Board, format: RegionFormat) {
+  const lanes = board.children.map((lane) => laneToMd(lane, format).trimEnd());
+  const archive = archiveToMd(board.data.archive);
+
+  return [
+    '',
+    lanes.join(format.laneSeparator ? '\n\n---\n\n' : '\n\n'),
+    archive ? `\n${archive}` : '',
+    settingsToCodeblock(board).trimStart(),
+    '',
+    '',
+  ].join('\n');
 }

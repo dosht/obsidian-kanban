@@ -6,6 +6,8 @@ import { Board, FileMetadata, Item } from 'src/components/types';
 import { defaultSort } from 'src/helpers/util';
 import { t } from 'src/lang/helpers';
 
+import { RegionFormat } from './region';
+
 export const frontmatterKey = 'kanban-plugin';
 
 export enum ParserFormats {
@@ -16,11 +18,13 @@ export interface BaseFormat {
   newItem(content: string, checkChar: string, forceEdit?: boolean): Item;
   updateItemContent(item: Item, content: string): Item;
   boardToMd(board: Board): string;
+  boardToRegionMd(board: Board, format: RegionFormat): string;
   mdToBoard(md: string): Board;
   reparseBoard(): Board;
 }
 
 export const completeString = `**${t('Complete')}**`;
+export const inProgressString = `**${t('In progress')}**`;
 export const archiveString = '***';
 export const basicFrontmatter = ['---', '', `${frontmatterKey}: board`, '', '---', '', ''].join(
   '\n'

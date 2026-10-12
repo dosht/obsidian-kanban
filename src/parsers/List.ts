@@ -9,12 +9,14 @@ import { BaseFormat } from './common';
 import {
   astToUnhydratedBoard,
   boardToMd,
+  boardToRegionMd,
   newItem,
   reparseBoard,
   updateItemContent,
 } from './formats/list';
 import { hydrateBoard, hydratePostOp } from './helpers/hydrateBoard';
 import { parseMarkdown } from './parseMarkdown';
+import { RegionFormat } from './region';
 
 const generatedKeys: Array<string | number> = [
   'id',
@@ -42,6 +44,10 @@ export class ListFormat implements BaseFormat {
 
   boardToMd(board: Board) {
     return boardToMd(board);
+  }
+
+  boardToRegionMd(board: Board, format: RegionFormat) {
+    return boardToRegionMd(board, format);
   }
 
   mdToBoard(md: string) {

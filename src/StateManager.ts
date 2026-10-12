@@ -7,8 +7,14 @@ import { KanbanSettings, SettingRetrievers } from './Settings';
 import { getDefaultDateFormat, getDefaultTimeFormat } from './components/helpers';
 import { Board, BoardTemplate, Item } from './components/types';
 import { ListFormat } from './parsers/List';
-import { BaseFormat, frontmatterKey, shouldRefreshBoard } from './parsers/common';
+import { BaseFormat, basicFrontmatter, frontmatterKey, shouldRefreshBoard } from './parsers/common';
 import { getTaskStatusDone } from './parsers/helpers/inlineMetadata';
+import {
+  RegionFormat,
+  detectRegionFormat,
+  findKanbanRegion,
+  getFrontmatterBlock,
+} from './parsers/region';
 import { defaultDateTrigger, defaultMetadataPosition, defaultTimeTrigger } from './settingHelpers';
 
 export class StateManager {
@@ -26,6 +32,7 @@ export class StateManager {
   file: TFile;
 
   parser: BaseFormat;
+  regionFormat: RegionFormat | null = null;
 
   constructor(
     app: App,
@@ -104,13 +111,35 @@ export class StateManager {
     const view = this.getAView();
 
     if (view) {
-      const fileStr = this.parser.boardToMd(this.state);
+      const fileStr = this.boardToFileMd(view.data);
+      if (fileStr === null) {
+        this.setError(new Error('Kanban region markers are missing; not saving'));
+        return;
+      }
+
       view.requestSaveToDisk(fileStr);
 
       this.viewSet.forEach((view) => {
         view.data = fileStr;
       });
     }
+  }
+
+  boardToFileMd(currentFile: string): string | null {
+    if (!this.regionFormat) return this.parser.boardToMd(this.state);
+
+    const region = findKanbanRegion(currentFile);
+    if (!region) return null;
+
+    return region.before + this.parser.boardToRegionMd(this.state, this.regionFormat) + region.after;
+  }
+
+  boardSourceMd(data: string) {
+    const region = findKanbanRegion(data);
+    this.regionFormat = region ? detectRegionFormat(region.inner) : null;
+    if (!region) return data;
+
+    return (getFrontmatterBlock(data) ?? basicFrontmatter) + region.inner;
   }
 
   softRefresh() {
@@ -302,7 +331,7 @@ export class StateManager {
   };
 
   getParsedBoard(data: string) {
-    const trimmedContent = data.trim();
+    const trimmedContent = this.boardSourceMd(data).trim();
 
     let board: Board = {
       ...BoardTemplate,

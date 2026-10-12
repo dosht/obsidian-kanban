@@ -13,12 +13,11 @@ import { SortPlaceholder } from 'src/dnd/components/SortPlaceholder';
 import { Sortable, StaticSortable } from 'src/dnd/components/Sortable';
 import { useDragHandle } from 'src/dnd/managers/DragManager';
 import { frontmatterKey } from 'src/parsers/common';
-import { getTaskStatusDone } from 'src/parsers/helpers/inlineMetadata';
 
 import { Items } from '../Item/Item';
 import { ItemForm } from '../Item/ItemForm';
 import { KanbanContext, SearchContext, SortContext } from '../context';
-import { c, generateInstanceId } from '../helpers';
+import { c, generateInstanceId, getLaneCheckChar } from '../helpers';
 import { DataTypes, EditState, EditingState, Item, Lane } from '../types';
 import { LaneHeader } from './LaneHeader';
 
@@ -65,6 +64,7 @@ function DraggableLaneRaw({
   const bindHandle = useDragHandle(measureRef, dragHandleRef);
 
   const shouldMarkItemsComplete = !!lane.data.shouldMarkItemsComplete;
+  const laneCheckChar = getLaneCheckChar(lane.data);
   const isCompactPrepend = insertionMethod === 'prepend-compact';
   const shouldPrepend = isCompactPrepend || insertionMethod === 'prepend';
 
@@ -88,10 +88,10 @@ function DraggableLaneRaw({
             data: {
               checked: {
                 // Mark the item complete if we're moving into a completed lane
-                $set: shouldMarkItemsComplete,
+                $set: laneCheckChar !== ' ',
               },
               checkChar: {
-                $set: shouldMarkItemsComplete ? getTaskStatusDone() : ' ',
+                $set: laneCheckChar,
               },
             },
           })

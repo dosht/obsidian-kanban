@@ -1786,3 +1786,20 @@ body:not(.native-scrollbars) .kanban-plugin__scroll-container::-webkit-scrollbar
     background-color: var(--date-background-color, rgba(var(--mono-rgb-100), 0.05));
   }
 }
+
+.kanban-plugin__item-prefix-button-wrapper input.task-list-item-checkbox[data-task='-'] {
+  position: relative;
+  background-color: var(--checkbox-color);
+  border-color: var(--checkbox-color);
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    width: 50%;
+    height: 2px;
+    background-color: var(--checkbox-marker-color);
+    -webkit-mask-image: none;
+  }
+}
